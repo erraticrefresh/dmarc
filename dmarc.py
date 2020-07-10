@@ -12,9 +12,7 @@ class Parser:
     DMARC report parser
 
     Attributes:
-        uid (obj): report file unique id
-        filepath (str): file path
-        filename (str): file name
+        fp (str): file path
         doc (obj): ElementTree class instance
     """
     def from_file(self, fp):
