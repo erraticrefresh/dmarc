@@ -1,5 +1,5 @@
 # dmarc #
-[![Build Status](https://travis-ci.com/erraticrefresh/dmarc.svg?branch=master)](https://travis-ci.com/erraticrefresh/dmarc)
+[![Build Status](https://travis-ci.com/erraticrefresh/dmarc.svg?token=pnmdrqAS92wHJwmH9Sxx&branch=master)](https://travis-ci.com/erraticrefresh/dmarc)
 
 #### INTRODUCTION ####
 dmarc is a module for Python that parses DMARC aggregate reports and inserts the records into a database. Built with sqlalchemy.
