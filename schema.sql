@@ -1,3 +1,6 @@
+CREATE USER IF NOT EXISTS 'dmarc'@'localhost' IDENTIFIED BY 'password';
+GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP ON *.* TO 'dmarc'@'localhost';
+
 CREATE DATABASE IF NOT EXISTS `dmarc_reports`;
 USE `dmarc_reports`;
 
