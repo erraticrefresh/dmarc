@@ -12,4 +12,4 @@ before_install:
 install:
     - pip install -r requirements.txt
 script:
-    - pytest example.py
+    - python -m pytest example.py
