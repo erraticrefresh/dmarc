@@ -1,8 +1,8 @@
-CREATE USER IF NOT EXISTS 'dmarc'@'localhost' IDENTIFIED BY 'password';
-GRANT SELECT,INSERT,UPDATE,DELETE,CREATE,DROP ON *.* TO 'dmarc'@'localhost';
-
 CREATE DATABASE IF NOT EXISTS `dmarc_reports`;
 USE `dmarc_reports`;
+
+CREATE USER IF NOT EXISTS 'dmarc'@'localhost' IDENTIFIED BY 'password';
+GRANT INSERT ON dmarc_reports.* TO 'dmarc'@'localhost';
 
 CREATE TABLE IF NOT EXISTS `report_metadata` (
   `uid` varchar(36) NOT NULL,
