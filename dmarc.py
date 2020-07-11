@@ -28,7 +28,7 @@ class Parser:
 
         except BadGzipFile:
             # if not .gz, .xml
-            dom = ET.parse(fp), ET.XMLParser(encoding='utf-8')
+            dom = ET.parse(fp)
             self.doc = dom.getroot()
 
         except Exception as e:
