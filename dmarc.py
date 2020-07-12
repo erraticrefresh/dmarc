@@ -133,24 +133,23 @@ def insert_records(uid, doc, session):
         session (obj): SQLAlchemy session instance
     """
     container = doc.findall('record')
-    for elem in container:
-        source_ip = elem.findtext('row/source_ip', default='NA')
+    for e in container:
+        source_ip = e.findtext('row/source_ip', default='NA')
 
-        count = elem.findtext('row/count', default=0)
+        count = e.findtext('row/count', default=0)
         count = int(count) if count != 0 else 0
 
-        ft = elem.findtext
-        disposition = ft('row/policy_evaluated/disposition', default='NA')
-        dkim = ft('row/policy_evaluated/dkim', default='NA')
-        spf = ft('row/policy_evaluated/spf', default='NA')
-        _type = ft('row/policy_evaluated/reason/type', default='NA')
-        comment = ft('row/policy_evaluated/reason/comment', default='NA')
-        header_from = ft('identifiers/header_from', default='NA')
-        dkim_domain = ft('auth_results/dkim/domain', default='NA')
-        dkim_result = ft('auth_results/dkim/result', default='NA')
-        dkim_hresult = ft('auth_results/dkim/human_result', default='NA')
-        spf_domain = ft('auth_results/spf/domain', default='NA')
-        spf_result = ft('auth_results/spf/result', default='NA')
+        disposition = e.findtext('row/policy_evaluated/disposition', default='NA')
+        dkim = e.findtext('row/policy_evaluated/dkim', default='NA')
+        spf = e.findtext('row/policy_evaluated/spf', default='NA')
+        _type = e.findtext('row/policy_evaluated/reason/type', default='NA')
+        comment = e.findtext('row/policy_evaluated/reason/comment', default='NA')
+        header_from = e.findtext('identifiers/header_from', default='NA')
+        dkim_domain = e.findtext('auth_results/dkim/domain', default='NA')
+        dkim_result = e.findtext('auth_results/dkim/result', default='NA')
+        dkim_hresult = e.findtext('auth_results/dkim/human_result', default='NA')
+        spf_domain = e.findtext('auth_results/spf/domain', default='NA')
+        spf_result = e.findtext('auth_results/spf/result', default='NA')
 
         sql = (f"INSERT INTO record("
             "uid, source_ip, count, disposition, dkim, spf, _type, "
