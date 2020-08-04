@@ -16,7 +16,7 @@ session = Session()
 
 # create Parser instance
 parser = dmarc.Parser()
-file = 'mockfile.com!mail.mockdomain.com!1555113601!1555200007.xml.gz'
+file = 'example.com!mail.example.com!1555113601!1555200007.xml.gz'
 
 def test_from_file():
     global parser, session
