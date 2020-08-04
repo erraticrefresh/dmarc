@@ -5,6 +5,8 @@ from uuid import uuid4
 from gzip import GzipFile, BadGzipFile, decompress
 import logging
 
+from exceptions import *
+
 logger = logging.getLogger()
 
 class Parser:
@@ -55,10 +57,19 @@ class Parser:
             logger.log(logger.level, e)
             raise e
 
+def validate(doc):
+    """
+    Validate xml report elements
+    """
+    try:
+        assert 'feedback' in doc.tag
+    except:
+        raise InvalidReport
+
 def insert_report_metadata(uid, doc, session):
     """
     Extract the DMARC metadata as defined here:
-    http://www.dmarc.org/draft-dmarc-base-00-02.txt in Appendix C
+    https://tools.ietf.org/html/rfc7489 in Appendix C
     If no data is found, return NA
 
     Arguments:
@@ -100,7 +111,7 @@ def insert_report_metadata(uid, doc, session):
 def insert_policy_published(uid, doc, session):
     """
     Extract the DMARC policy published information as defined here:
-    http://www.dmarc.org/draft-dmarc-base-00-02.txt in Section 6.2
+    https://tools.ietf.org/html/rfc7489 in Section 6.2
     If no data is found, return NA
 
     Arguments:
@@ -124,7 +135,7 @@ def insert_policy_published(uid, doc, session):
 def insert_records(uid, doc, session):
     """
     Extract the DMARC records as defined here:
-    http://www.dmarc.org/draft-dmarc-base-00-02.txt in Appendix C
+    https://tools.ietf.org/html/rfc7489 in Appendix C
     If no data is found, return NA
 
     Arguments:
@@ -172,6 +183,7 @@ def insert_report(doc, session):
     """
     uid = uuid4()
     try:
+        validate(doc)
         insert_report_metadata(uid, doc, session)
         insert_policy_published(uid, doc, session)
         insert_records(uid, doc, session)
