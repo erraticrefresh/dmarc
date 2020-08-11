@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.com/erraticrefresh/dmarc.svg?token=pnmdrqAS92wHJwmH9Sxx&branch=master)](https://travis-ci.com/erraticrefresh/dmarc)
 
 #### INTRODUCTION ####
-dmarc is a module for Python that parses DMARC aggregate reports and inserts the records into a database. Built with sqlalchemy.
+Parses DMARC aggregate reports and inserts the records into a database. Built with sqlalchemy.
 
 ### Usage ###
 <hr>
@@ -18,7 +18,7 @@ parser = dmarc.Parser()
 
 ##### From file #####
 ```python
-parser.from_file('path/to/file.xml.gz')
+doc = parser.from_file('path/to/file.xml.gz')
 ```
 <br>
 
@@ -27,12 +27,18 @@ parser.from_file('path/to/file.xml.gz')
 with open('path/to/file.xml.gz', 'rb') as f:
     bytes_obj = f.read()
 
-parser.from_bytes(bytes_obj)
+doc = parser.from_bytes(bytes_obj)
 ```
 <br>
 
-##### Insert records #####
+##### Create a Report instance #####
+```python
+report = dmarc.Report(doc)
+```
+<br>
+
+##### Insert report #####
 Pass a session instance from sqlalchemy.
 ```python
-dmarc.insert_report(parser.doc, session)
+dmarc.insert_report(report, session)
 ```
