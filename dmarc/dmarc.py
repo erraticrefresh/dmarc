@@ -1,19 +1,22 @@
 from xml.etree import ElementTree as ET
 from gzip import open as gzip_open, BadGzipFile, decompress
 from uuid import uuid4
+from pathlib import Path
 
 from logging import getLogger
 
 from xmlschema import XMLSchema11
 
-from . import exceptions
+import dmarc.exceptions
 
 logger = getLogger()
 
+pkg = Path(__file__).parent.absolute()
+
 XSD_FILES = {
-    'minimal': 'dmarc/minimal_v01.xsd',
-    'relaxed': 'dmarc/relaxed_v01.xsd',
-    'strict': 'dmarc/rfc7489.xsd'}
+    'minimal': f'{pkg}/minimal_v01.xsd',
+    'relaxed': f'{pkg}/relaxed_v01.xsd',
+    'strict': f'{pkg}/rfc7489.xsd'}
 
 class Parser:
     def __init__(self, tolerance='minimal'):
@@ -234,7 +237,6 @@ def insert_report(report, session):
         '{r.spf_result}')
         """)
 
-        print(f"HERE'S THE QUERY\n\n{queries}")
     try:
         for q in queries:
             session.execute(q)
