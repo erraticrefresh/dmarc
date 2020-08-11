@@ -7,7 +7,7 @@ from logging import getLogger
 
 from xmlschema import XMLSchema11
 
-import dmarc.exceptions
+import dmarc.exceptions as exceptions
 
 logger = getLogger()
 
