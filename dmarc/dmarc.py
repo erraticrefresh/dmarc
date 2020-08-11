@@ -1,5 +1,5 @@
 from xml.etree import ElementTree as ET
-from gzip import open as gzip_open, BadGzipFile, decompress
+from gzip import decompress, BadGzipFile
 from uuid import uuid4
 from pathlib import Path
 
@@ -19,13 +19,20 @@ XSD_FILES = {
     'strict': f'{pkg}/rfc7489.xsd'}
 
 class Parser:
-    def __init__(self, tolerance='minimal'):
+    """
+    DMARC Parser class
 
+    Arguments:
+        tolerance (str): xml schema leniency
+        schema (obj): XMLSchema instance
+    """
+    def __init__(self, tolerance='minimal'):
         self.tolerance = tolerance
         try:
             # rfc7489 schema uses XSD v1.1
             # https://www.w3.org/TR/xmlschema11-1/
             self.schema = XMLSchema11(XSD_FILES[tolerance])
+
         except:
             raise ValueError(
                 "tolerance must be 'minimal', 'relaxed', or 'strict'")
@@ -34,8 +41,8 @@ class Parser:
         try:
             # from .gz bytes
             data = decompress(data).decode()
-        except BadGzipFile:
 
+        except BadGzipFile:
             # if not .gz, .xml bytes
             data = data.decode()
 
@@ -72,7 +79,6 @@ class Parser:
         Arguments:
             data (bytes): bytes file object
         """
-
         try:
             doc = self._parse(data)
 
@@ -93,22 +99,24 @@ class Parser:
 
             elif isinstance(src, str):
                 if src.endswith('.gz'):
-                    with gzip_open(src, 'rb') as f:
-                        return self.schema.is_valid(f.read().decode())
-                else:
-                    return self.schema.is_valid(src)
+                    with open(src, 'rb') as f:
+                        return self.schema.is_valid(
+                            decompress(f.read()).decode())
+
+                return self.schema.is_valid(src)
 
         except Exception as e:
             logger.log(logger.level, [e, src])
 
 class Report:
     """
+    DMARC Report class
     Extract the DMARC metadata as defined here:
     https://tools.ietf.org/html/rfc7489 in Appendix C
     If no data is found, return NA
 
     Arguments:
-        doc (obj): ElementTree class instance
+        doc (obj): ElementTree instance
     """
     def __init__(self, doc):
         self.version = doc.findtext('version')
@@ -142,7 +150,6 @@ class Metadata:
 
 class PolicyPublished:
     def __init__(self, doc):
-
         self.domain = doc.findtext('policy_published/domain', default='NA')
         self.adkim = doc.findtext('policy_published/adkim', default='NA')
         self.aspf = doc.findtext('policy_published/aspf', default='NA')
@@ -157,7 +164,6 @@ class PolicyPublished:
 
 class Record:
     def __init__(self, rec):
-
         self.source_ip = rec.findtext('row/source_ip', default='NA')
 
         self.count = rec.findtext('row/count', default='NA')
@@ -196,7 +202,6 @@ def insert_report(report, session):
         report (obj): Report instance
         session (obj): SQLAlchemy session instance
     """
-
     uid = uuid4()
     errors = " | ".join(report.metadata.errors) \
         if report.metadata.errors else "NA"
