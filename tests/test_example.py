@@ -14,21 +14,21 @@ Session = sessionmaker(bind=engine)
 # create a Session
 session = Session()
 
-# create Parser instance
+# create a Parser
 parser = dmarc.Parser()
-file = 'example.com!mail.example.com!1555113601!1555200007.xml.gz'
+file = './tests/sample/example.com!mail.example.com!1555113601!1555200007.xml.gz'
 
 def test_from_file():
-    global parser, session
 
-    parser.from_file(file)
-    dmarc.insert_report(parser.doc, session)
+    doc = parser.from_file(file)
+    report = dmarc.Report(doc)
+    dmarc.insert_report(report, session)
 
 def test_from_bytes():
-    global parser, session
 
     with open(file, 'rb') as f:
         bytes_obj = f.read()
 
-    parser.from_bytes(bytes_obj)
-    dmarc.insert_report(parser.doc, session)
+    doc = parser.from_bytes(bytes_obj)
+    report = dmarc.Report(doc)
+    dmarc.insert_report(report, session)
