@@ -2,7 +2,7 @@ from xml.etree import ElementTree as ET
 from gzip import decompress, BadGzipFile
 from uuid import uuid4
 from pathlib import Path
-
+from datetime import datetime
 from logging import getLogger
 
 from xmlschema import XMLSchema11
@@ -10,7 +10,6 @@ from xmlschema import XMLSchema11
 import dmarc.exceptions as exceptions
 
 logger = getLogger()
-
 pkg = Path(__file__).parent.absolute()
 
 XSD_FILES = {
@@ -22,11 +21,15 @@ class Parser:
     """
     DMARC Parser class
 
-    Arguments:
+    Attributes:
         tolerance (str): xml schema leniency
         schema (obj): XMLSchema instance
     """
     def __init__(self, tolerance='minimal'):
+        """
+        Arguments:
+            tolerance (str): xml schema leniency
+        """
         self.tolerance = tolerance
         try:
             # rfc7489 schema uses XSD v1.1
@@ -91,7 +94,6 @@ class Parser:
     def validate(self, src):
         """
         Validate xml report elements
-
         """
         try:
             if isinstance(src, bytes):
@@ -114,11 +116,12 @@ class Report:
     Extract the DMARC metadata as defined here:
     https://tools.ietf.org/html/rfc7489 in Appendix C
     If no data is found, return NA
-
-    Arguments:
-        doc (obj): ElementTree instance
     """
     def __init__(self, doc):
+        """
+        Arguments:
+            doc (obj): ElementTree instance
+        """
         self.version = doc.findtext('version')
         self.metadata = Metadata(doc)
         self.policy_published = PolicyPublished(doc)
@@ -136,15 +139,11 @@ class Metadata:
         self.report_id = doc.findtext(
             'report_metadata/report_id', default='NA')
 
-        self.date_begin = doc.findtext(
-            'report_metadata/date_range/begin', default='NA')
-        self.date_begin = int(self.date_begin) \
-            if self.date_begin.isdigit() else 0
+        self.date_begin = datetime.utcfromtimestamp(int(
+            doc.findtext('report_metadata/date_range/begin')))
 
-        self.date_end = doc.findtext(
-            'report_metadata/date_range/end', default='NA')
-        self.date_end = int(self.date_end) \
-            if self.date_end.isdigit() else 0
+        self.date_end = datetime.utcfromtimestamp(int(
+            doc.findtext('report_metadata/date_range/end')))
 
         self.errors = [e for e in doc.findall('report_metadata/error')]
 
@@ -214,8 +213,9 @@ def insert_report(report, session):
     report_id, date_begin, date_end, `errors`)
     VALUES('{uid}', '{report.metadata.org_name}',
     '{report.metadata.email}', '{report.metadata.extra_contact_info}',
-    '{report.metadata.report_id}', {report.metadata.date_begin},
-    {report.metadata.date_end}, '{errors}')
+    '{report.metadata.report_id}',
+    '{report.metadata.date_begin.strftime('%Y-%m-%d %H:%M:%S')}',
+    '{report.metadata.date_end.strftime('%Y-%m-%d %H:%M:%S')}', '{errors}')
     """)
 
     queries.append(f"""

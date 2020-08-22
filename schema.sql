@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS `report_metadata` (
   `email` varchar(255) DEFAULT NULL,
   `extra_contact_info` varchar(255) DEFAULT NULL,
   `report_id` varchar(36) DEFAULT NULL,
-  `date_begin` int(11) DEFAULT NULL,
-  `date_end` int(11) DEFAULT NULL,
+  `date_begin` DATETIME,
+  `date_end` DATETIME,
   `errors` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`uid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
