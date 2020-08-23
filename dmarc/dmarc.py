@@ -120,6 +120,12 @@ class Report:
     Extract the DMARC metadata as defined here:
     https://tools.ietf.org/html/rfc7489 in Appendix C
     If no data is found, return NA
+
+    Attributes:
+        version (str): report version
+        metadata (dict of str: str): report metadata values
+        policy_published (dict of str: str): report policy published values
+        records (list of dict): report records
     """
     def __init__(self, doc):
         """
@@ -198,7 +204,6 @@ class Report:
         Insert DMARC Aggregate Report into database
 
         Arguments:
-            report (obj): Report instance
             session (obj): SQLAlchemy session instance
         """
         uid = uuid4()
