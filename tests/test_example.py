@@ -25,7 +25,7 @@ def test_from_file():
 
     doc = parser.from_file(file)
     report = dmarc.Report(doc)
-    dmarc.insert_report(report, session)
+    report.insert(session)
 
 def test_from_bytes():
 
@@ -34,4 +34,4 @@ def test_from_bytes():
 
     doc = parser.from_bytes(bytes_obj)
     report = dmarc.Report(doc)
-    dmarc.insert_report(report, session)
+    report.insert(session)

@@ -1,2 +1,2 @@
-from .dmarc import Parser, Report, insert_report, exceptions
+from .dmarc import Parser, Report, exceptions
 del dmarc

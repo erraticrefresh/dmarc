@@ -59,6 +59,7 @@ class Parser:
     def from_file(self, fp):
         """
         Parse XML from gzip or xml file
+
         Arguments:
             fp (str): filepath
         """
@@ -93,19 +94,22 @@ class Parser:
 
     def validate(self, src):
         """
-        Validate xml report elements
+        Validate xml report elements. Accepts XML bytes or .xml or .xml.gz
+        filepath
+
+        Arguments:
+            src (bytes or str): filepath or file bytes
         """
         try:
-            if isinstance(src, bytes):
-                src = src.decode()
+            return self.schema.is_valid(src.decode())
 
-            elif isinstance(src, str):
-                if src.endswith('.gz'):
-                    with open(src, 'rb') as f:
-                        return self.schema.is_valid(
-                            decompress(f.read()).decode())
+        except AttributeError:
+            if src.endswith('.gz'):
+                with open(src, 'rb') as f:
+                    return self.schema.is_valid(
+                        decompress(f.read()).decode())
 
-                return self.schema.is_valid(src)
+            return self.schema.is_valid(src)
 
         except Exception as e:
             logger.log(logger.level, [e, src])
@@ -123,132 +127,150 @@ class Report:
             doc (obj): ElementTree instance
         """
         self.version = doc.findtext('version')
-        self.metadata = Metadata(doc)
-        self.policy_published = PolicyPublished(doc)
-        self.records = [Record(elem) for elem in doc.findall('record')]
+        self.metadata = {
+            'org_name': doc.findtext('report_metadata/org_name', default='NA'),
+            'email': doc.findtext('report_metadata/email', default='NA'),
+            'extra_contact_info': doc.findtext(
+                'report_metadata/extra_contact_info', default='NA'),
 
-class Metadata:
-    def __init__(self, doc):
+            'report_id': doc.findtext(
+                'report_metadata/report_id', default='NA'),
 
-        self.org_name = doc.findtext(
-            'report_metadata/org_name', default='NA')
-        self.email = doc.findtext(
-            'report_metadata/email', default='NA')
-        self.extra_contact_info = doc.findtext(
-            'report_metadata/extra_contact_info', default='NA')
-        self.report_id = doc.findtext(
-            'report_metadata/report_id', default='NA')
+            'date_begin': datetime.utcfromtimestamp(int(
+                doc.findtext('report_metadata/date_range/begin'))),
 
-        self.date_begin = datetime.utcfromtimestamp(int(
-            doc.findtext('report_metadata/date_range/begin')))
+            'date_end': datetime.utcfromtimestamp(int(
+                doc.findtext('report_metadata/date_range/end'))),
 
-        self.date_end = datetime.utcfromtimestamp(int(
-            doc.findtext('report_metadata/date_range/end')))
+            'errors': [e for e in doc.findall('report_metadata/error')]
+        }
 
-        self.errors = [e for e in doc.findall('report_metadata/error')]
+        self.policy_published = {
+            'domain': doc.findtext('policy_published/domain', default='NA'),
+            'adkim': doc.findtext('policy_published/adkim', default='NA'),
+            'aspf': doc.findtext('policy_published/aspf', default='NA'),
+            'p': doc.findtext('policy_published/p', default='NA'),
+            'pct': doc.findtext('policy_published/pct', default='NA'),
+            'fo': doc.findtext('policy_published/fo', default='NA'),
+            'rf': doc.findtext('policy_published/rf', default='NA'),
+            'ri': doc.findtext('policy_published/ri', default='NA'),
+            'rua': doc.findtext('policy_published/rua', default='NA'),
+            'ruf': doc.findtext('policy_published/ruf', default='NA'),
+            'v': doc.findtext('policy_published/v', default='NA')
+        }
 
-class PolicyPublished:
-    def __init__(self, doc):
-        self.domain = doc.findtext('policy_published/domain', default='NA')
-        self.adkim = doc.findtext('policy_published/adkim', default='NA')
-        self.aspf = doc.findtext('policy_published/aspf', default='NA')
-        self.p = doc.findtext('policy_published/p', default='NA')
-        self.pct = doc.findtext('policy_published/pct', default='NA')
-        self.fo = doc.findtext('policy_published/fo', default='NA')
-        self.rf = doc.findtext('policy_published/rf', default='NA')
-        self.ri = doc.findtext('policy_published/ri', default='NA')
-        self.rua = doc.findtext('policy_published/rua', default='NA')
-        self.ruf = doc.findtext('policy_published/ruf', default='NA')
-        self.v = doc.findtext('policy_published/v', default='NA')
+        self.records = [{
+            'source_ip':  rec.findtext('row/source_ip', default='NA'),
+            'count': int(rec.findtext('row/count', default='NA')),
+            'disposition': rec.findtext(
+                'row/policy_evaluated/disposition', default='NA'),
 
-class Record:
-    def __init__(self, rec):
-        self.source_ip = rec.findtext('row/source_ip', default='NA')
+            'dkim': rec.findtext('row/policy_evaluated/dkim', default='NA'),
+            'spf': rec.findtext('row/policy_evaluated/spf', default='NA'),
+            'type': rec.findtext(
+                'row/policy_evaluated/reason/type', default='NA'),
 
-        self.count = rec.findtext('row/count', default='NA')
-        self.count = int(self.count) if self.count.isdigit() else 0
+            'comment': rec.findtext(
+                'row/policy_evaluated/reason/comment', default='NA'),
 
-        self.disposition = rec.findtext(
-            'row/policy_evaluated/disposition', default='NA')
-        self.dkim = rec.findtext(
-            'row/policy_evaluated/dkim', default='NA')
-        self.spf = rec.findtext(
-            'row/policy_evaluated/spf', default='NA')
-        self.type = rec.findtext(
-            'row/policy_evaluated/reason/type', default='NA')
-        self.comment = rec.findtext(
-            'row/policy_evaluated/reason/comment', default='NA')
-        self.header_from = rec.findtext(
-            'identifiers/header_from', default='NA')
-        self.envelope_from = rec.findtext(
-           'identifiers/envelope_from', default='NA')
-        self.dkim_domain = rec.findtext(
-            'auth_results/dkim/domain', default='NA')
-        self.dkim_result = rec.findtext(
-            'auth_results/dkim/result', default='NA')
-        self.dkim_hresult = rec.findtext(
-            'auth_results/dkim/human_result', default='NA')
-        self.spf_domain = rec.findtext(
-            'auth_results/spf/domain', default='NA')
-        self.spf_result = rec.findtext(
-            'auth_results/spf/result', default='NA')
+            'header_from': rec.findtext(
+                'identifiers/header_from', default='NA'),
 
-def insert_report(report, session):
-    """
-    Insert DMARC Aggregate Report into database
+            'envelope_from': rec.findtext(
+               'identifiers/envelope_from', default='NA'),
 
-    Arguments:
-        report (obj): Report instance
-        session (obj): SQLAlchemy session instance
-    """
-    uid = uuid4()
-    errors = " | ".join(report.metadata.errors) \
-        if report.metadata.errors else "NA"
+            'dkim_domain': rec.findtext(
+                'auth_results/dkim/domain', default='NA'),
 
-    queries = []
+            'dkim_result': rec.findtext(
+                'auth_results/dkim/result', default='NA'),
 
-    queries.append(f"""
-    INSERT INTO report_metadata(
-    uid, organization, email, extra_contact_info,
-    report_id, date_begin, date_end, `errors`)
-    VALUES('{uid}', '{report.metadata.org_name}',
-    '{report.metadata.email}', '{report.metadata.extra_contact_info}',
-    '{report.metadata.report_id}',
-    '{report.metadata.date_begin.strftime('%Y-%m-%d %H:%M:%S')}',
-    '{report.metadata.date_end.strftime('%Y-%m-%d %H:%M:%S')}', '{errors}')
-    """)
+            'dkim_hresult': rec.findtext(
+                'auth_results/dkim/human_result', default='NA'),
 
-    queries.append(f"""
-    INSERT INTO policy_published(
-    uid, domain, adkim, aspf, p, pct, fo, rf, ri, rua, ruf, v)
-    VALUES('{uid}', '{report.policy_published.domain}',
-    '{report.policy_published.adkim}', '{report.policy_published.aspf}',
-    '{report.policy_published.p}', '{report.policy_published.pct}',
-    '{report.policy_published.fo}', '{report.policy_published.rf}',
-    '{report.policy_published.ri}', '{report.policy_published.rua}',
-    '{report.policy_published.ruf}', '{report.policy_published.v}')
-    """)
+            'spf_domain': rec.findtext('auth_results/spf/domain', default='NA'),
+            'spf_result': rec.findtext('auth_results/spf/result', default='NA')
 
-    for r in report.records:
+        } for rec in doc.findall('record')]
+
+    def insert(self, session):
+        """
+        Insert DMARC Aggregate Report into database
+
+        Arguments:
+            report (obj): Report instance
+            session (obj): SQLAlchemy session instance
+        """
+        uid = uuid4()
+        errors = " | ".join(self.metadata['errors']) \
+            if self.metadata['errors'] else "NA"
+
+        queries = []
+
         queries.append(f"""
-        INSERT INTO record(
-        uid, source_ip, count, disposition, dkim, spf, type, comment,
-        header_from, envelope_from, dkim_domain, dkim_result, dkim_hresult,
-        spf_domain, spf_result)
-        VALUES('{uid}', '{r.source_ip}', {r.count}, '{r.disposition}',
-        '{r.dkim}', '{r.spf}', '{r.type}', '{r.comment}',
-        '{r.header_from}', '{r.envelope_from}', '{r.dkim_domain}',
-        '{r.dkim_result}', '{r.dkim_hresult}', '{r.spf_domain}',
-        '{r.spf_result}')
+        INSERT INTO report_metadata(
+        uid, organization, email, extra_contact_info,
+        report_id, date_begin, date_end, `errors`)
+        VALUES(
+            '{uid}',
+            '{self.metadata['org_name']}',
+            '{self.metadata['email']}',
+            '{self.metadata['extra_contact_info']}',
+            '{self.metadata['report_id']}',
+            '{self.metadata['date_begin'].strftime('%Y-%m-%d %H:%M:%S')}',
+            '{self.metadata['date_end'].strftime('%Y-%m-%d %H:%M:%S')}',
+            '{errors}')
         """)
 
-    try:
-        for q in queries:
-            session.execute(q)
+        queries.append(f"""
+        INSERT INTO policy_published(
+        uid, domain, adkim, aspf, p, pct, fo, rf, ri, rua, ruf, v)
+        VALUES(
+            '{uid}',
+            '{self.policy_published['domain']}',
+            '{self.policy_published['adkim']}',
+            '{self.policy_published['aspf']}',
+            '{self.policy_published['p']}',
+            '{self.policy_published['pct']}',
+            '{self.policy_published['fo']}',
+            '{self.policy_published['rf']}',
+            '{self.policy_published['ri']}',
+            '{self.policy_published['rua']}',
+            '{self.policy_published['ruf']}',
+            '{self.policy_published['v']}')
+        """)
 
-        session.commit()
+        for r in self.records:
+            queries.append(f"""
+            INSERT INTO record(
+            uid, source_ip, count, disposition, dkim, spf, type, comment,
+            header_from, envelope_from, dkim_domain, dkim_result, dkim_hresult,
+            spf_domain, spf_result)
+            VALUES(
+                '{uid}',
+                '{r['source_ip']}',
+                {r['count']},
+                '{r['disposition']}',
+                '{r['dkim']}',
+                '{r['spf']}',
+                '{r['type']}',
+                '{r['comment']}',
+                '{r['header_from']}',
+                '{r['envelope_from']}',
+                '{r['dkim_domain']}',
+                '{r['dkim_result']}',
+                '{r['dkim_hresult']}',
+                '{r['spf_domain']}',
+                '{r['spf_result']}')
+            """)
 
-    except Exception as e:
-        session.rollback()
-        logger.log(logger.level, e)
-        raise e
+        try:
+            for q in queries:
+                session.execute(q)
+
+            session.commit()
+
+        except Exception as e:
+            session.rollback()
+            logger.log(logger.level, e)
+            raise e
