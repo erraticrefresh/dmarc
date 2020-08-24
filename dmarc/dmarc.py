@@ -36,9 +36,13 @@ class Parser:
             # https://www.w3.org/TR/xmlschema11-1/
             self.schema = XMLSchema11(XSD_FILES[tolerance])
 
-        except:
+        except KeyError:
             raise ValueError(
                 "tolerance must be 'minimal', 'relaxed', or 'strict'")
+
+        except Exception as e:
+            logger.log(logger.level, e)
+            raise e
 
     def _parse(self, data):
         try:
