@@ -9,7 +9,7 @@ from xmlschema import XMLSchema11
 
 import dmarc.exceptions as exceptions
 
-logger = getLogger()
+logger = getLogger('dmarc')
 pkg = Path(__file__).parent.absolute()
 
 XSD_FILES = {
@@ -22,14 +22,17 @@ class Parser:
     DMARC Parser class
 
     Attributes:
-        tolerance (str): xml schema leniency
+        validation (bool): validate xml against schema
+        tolerance (str): xml schema validation leniency
         schema (obj): XMLSchema instance
     """
-    def __init__(self, tolerance='minimal'):
+    def __init__(self, validation=True, tolerance='minimal'):
         """
         Arguments:
-            tolerance (str): xml schema leniency
+            validation (bool): validate xml against schema
+            tolerance (str): xml schema validation leniency
         """
+        self.validation = validation
         self.tolerance = tolerance
         try:
             # rfc7489 schema uses XSD v1.1
@@ -37,11 +40,13 @@ class Parser:
             self.schema = XMLSchema11(XSD_FILES[tolerance])
 
         except KeyError:
-            raise ValueError(
+            e = ValueError(
                 "tolerance must be 'minimal', 'relaxed', or 'strict'")
+            logger.error([e, tolerance])
+            raise e
 
         except Exception as e:
-            logger.log(logger.level, e)
+            logger.error(e)
             raise e
 
     def _parse(self, data):
@@ -53,8 +58,9 @@ class Parser:
             # if not .gz, .xml bytes
             data = data.decode()
 
-        if not self.schema.is_valid(data):
-            raise exceptions.ValidationError
+        if self.validation == True:
+            if not self.schema.is_valid(data):
+                raise exceptions.ValidationError(self.tolerance)
 
         doc = ET.fromstring(data)
 
@@ -74,7 +80,7 @@ class Parser:
             doc = self._parse(data)
 
         except Exception as e:
-            logger.log(logger.level, [e, fp])
+            logger.error([e, fp])
             raise e
 
         return doc
@@ -91,7 +97,7 @@ class Parser:
             doc = self._parse(data)
 
         except Exception as e:
-            logger.log(logger.level, [e, data])
+            logger.error([e, data])
             raise e
 
         return doc
@@ -116,7 +122,8 @@ class Parser:
             return self.schema.is_valid(src)
 
         except Exception as e:
-            logger.log(logger.level, [e, src])
+            logger.error([e, src])
+            raise e
 
 class Report:
     """
@@ -136,72 +143,84 @@ class Report:
         Arguments:
             doc (obj): ElementTree instance
         """
-        self.version = doc.findtext('version')
-        self.metadata = {
-            'org_name': doc.findtext('report_metadata/org_name', default='NA'),
-            'email': doc.findtext('report_metadata/email', default='NA'),
-            'extra_contact_info': doc.findtext(
-                'report_metadata/extra_contact_info', default='NA'),
+        try:
+            self.version = doc.findtext('version')
+            self.metadata = {
+                'org_name': doc.findtext(
+                    'report_metadata/org_name', default='NA'),
 
-            'report_id': doc.findtext(
-                'report_metadata/report_id', default='NA'),
+                'email': doc.findtext(
+                    'report_metadata/email', default='NA'),
 
-            'date_begin': datetime.utcfromtimestamp(int(
-                doc.findtext('report_metadata/date_range/begin'))),
+                'extra_contact_info': doc.findtext(
+                    'report_metadata/extra_contact_info', default='NA'),
 
-            'date_end': datetime.utcfromtimestamp(int(
-                doc.findtext('report_metadata/date_range/end'))),
+                'report_id': doc.findtext(
+                    'report_metadata/report_id', default='NA'),
 
-            'errors': [e for e in doc.findall('report_metadata/error')]
-        }
+                'date_begin': datetime.utcfromtimestamp(int(
+                    doc.findtext('report_metadata/date_range/begin'))),
 
-        self.policy_published = {
-            'domain': doc.findtext('policy_published/domain', default='NA'),
-            'adkim': doc.findtext('policy_published/adkim', default='NA'),
-            'aspf': doc.findtext('policy_published/aspf', default='NA'),
-            'p': doc.findtext('policy_published/p', default='NA'),
-            'pct': doc.findtext('policy_published/pct', default='NA'),
-            'fo': doc.findtext('policy_published/fo', default='NA'),
-            'rf': doc.findtext('policy_published/rf', default='NA'),
-            'ri': doc.findtext('policy_published/ri', default='NA'),
-            'rua': doc.findtext('policy_published/rua', default='NA'),
-            'ruf': doc.findtext('policy_published/ruf', default='NA'),
-            'v': doc.findtext('policy_published/v', default='NA')
-        }
+                'date_end': datetime.utcfromtimestamp(int(
+                    doc.findtext('report_metadata/date_range/end'))),
 
-        self.records = [{
-            'source_ip':  rec.findtext('row/source_ip', default='NA'),
-            'count': int(rec.findtext('row/count', default='NA')),
-            'disposition': rec.findtext(
-                'row/policy_evaluated/disposition', default='NA'),
+                'errors': [e for e in doc.findall('report_metadata/error')]
+            }
 
-            'dkim': rec.findtext('row/policy_evaluated/dkim', default='NA'),
-            'spf': rec.findtext('row/policy_evaluated/spf', default='NA'),
-            'type': rec.findtext(
-                'row/policy_evaluated/reason/type', default='NA'),
+            self.policy_published = {
+                'domain': doc.findtext('policy_published/domain', default='NA'),
+                'adkim': doc.findtext('policy_published/adkim', default='NA'),
+                'aspf': doc.findtext('policy_published/aspf', default='NA'),
+                'p': doc.findtext('policy_published/p', default='NA'),
+                'pct': doc.findtext('policy_published/pct', default='NA'),
+                'fo': doc.findtext('policy_published/fo', default='NA'),
+                'rf': doc.findtext('policy_published/rf', default='NA'),
+                'ri': doc.findtext('policy_published/ri', default='NA'),
+                'rua': doc.findtext('policy_published/rua', default='NA'),
+                'ruf': doc.findtext('policy_published/ruf', default='NA'),
+                'v': doc.findtext('policy_published/v', default='NA')
+            }
 
-            'comment': rec.findtext(
-                'row/policy_evaluated/reason/comment', default='NA'),
+            self.records = [{
+                'source_ip':  rec.findtext('row/source_ip', default='NA'),
+                'count': int(rec.findtext('row/count', default='NA')),
+                'disposition': rec.findtext(
+                    'row/policy_evaluated/disposition', default='NA'),
 
-            'header_from': rec.findtext(
-                'identifiers/header_from', default='NA'),
+                'dkim': rec.findtext('row/policy_evaluated/dkim', default='NA'),
+                'spf': rec.findtext('row/policy_evaluated/spf', default='NA'),
+                'type': rec.findtext(
+                    'row/policy_evaluated/reason/type', default='NA'),
 
-            'envelope_from': rec.findtext(
-               'identifiers/envelope_from', default='NA'),
+                'comment': rec.findtext(
+                    'row/policy_evaluated/reason/comment', default='NA'),
 
-            'dkim_domain': rec.findtext(
-                'auth_results/dkim/domain', default='NA'),
+                'header_from': rec.findtext(
+                    'identifiers/header_from', default='NA'),
 
-            'dkim_result': rec.findtext(
-                'auth_results/dkim/result', default='NA'),
+                'envelope_from': rec.findtext(
+                   'identifiers/envelope_from', default='NA'),
 
-            'dkim_hresult': rec.findtext(
-                'auth_results/dkim/human_result', default='NA'),
+                'dkim_domain': rec.findtext(
+                    'auth_results/dkim/domain', default='NA'),
 
-            'spf_domain': rec.findtext('auth_results/spf/domain', default='NA'),
-            'spf_result': rec.findtext('auth_results/spf/result', default='NA')
+                'dkim_result': rec.findtext(
+                    'auth_results/dkim/result', default='NA'),
 
-        } for rec in doc.findall('record')]
+                'dkim_hresult': rec.findtext(
+                    'auth_results/dkim/human_result', default='NA'),
+
+                'spf_domain': rec.findtext(
+                    'auth_results/spf/domain', default='NA'),
+
+                'spf_result': rec.findtext(
+                    'auth_results/spf/result', default='NA')
+
+            } for rec in doc.findall('record')]
+
+        except Excception as e:
+            logger.error([e, doc])
+            raise e
 
     def insert(self, session):
         """
@@ -218,8 +237,8 @@ class Report:
 
         queries.append(f"""
         INSERT INTO report_metadata(
-        uid, organization, email, extra_contact_info,
-        report_id, date_begin, date_end, `errors`)
+        uid, organization, email, extra_contact_info, report_id,
+        date_begin, date_end, `errors`)
         VALUES(
             '{uid}',
             '{self.metadata['org_name']}',
@@ -281,5 +300,5 @@ class Report:
 
         except Exception as e:
             session.rollback()
-            logger.log(logger.level, e)
+            logger.error([e, queries])
             raise e
