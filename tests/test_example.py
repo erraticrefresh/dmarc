@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 import dmarc
 
 sample_dir = f'{Path(__file__).parent.absolute()}/sample'
-file = f'{sample_dir}/example.com!mail.example.com!1555113601!1555200007.xml.gz'
+file = f'{sample_dir}/example.com!mail.example.com!1596254400!1596340740.xml.gz'
 
 # https://docs.sqlalchemy.org/en/13/orm/session_basics.html#getting-a-session
 # an Engine, which the Session will use for connection
