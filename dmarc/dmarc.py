@@ -33,21 +33,7 @@ class Parser:
             tolerance (str): xml schema validation leniency
         """
         self.validation = validation
-        self.tolerance = tolerance
-        try:
-            # rfc7489 schema uses XSD v1.1
-            # https://www.w3.org/TR/xmlschema11-1/
-            self.schema = XMLSchema11(XSD_FILES[tolerance])
-
-        except KeyError:
-            e = ValueError(
-                "tolerance must be 'minimal', 'relaxed', or 'strict'")
-            logger.error([e, tolerance])
-            raise e
-
-        except Exception as e:
-            logger.error(e)
-            raise e
+        self.set_tolerance(tolerance)
 
     def _parse(self, data):
         try:
@@ -65,6 +51,24 @@ class Parser:
         doc = ET.fromstring(data)
 
         return doc
+
+    def set_tolerance(self, tolerance):
+        try:
+            # rfc7489 schema uses XSD v1.1
+            # https://www.w3.org/TR/xmlschema11-1/
+
+            self.schema = XMLSchema11(XSD_FILES[tolerance])
+            self.tolerance = tolerance
+
+        except KeyError:
+            e = ValueError(
+                "tolerance must be 'minimal', 'relaxed', or 'strict'")
+            logger.error([e, tolerance])
+            raise e
+
+        except Exception as e:
+            logger.error(e)
+            raise e
 
     def from_file(self, fp):
         """
@@ -112,6 +116,10 @@ class Parser:
         """
         try:
             return self.schema.is_valid(src.decode())
+
+        except UnicodeDecodeError:
+            return self.schema.is_valid(
+                decompress(src).decode())
 
         except AttributeError:
             if src.endswith('.gz'):
