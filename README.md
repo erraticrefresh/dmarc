@@ -38,7 +38,7 @@ report = dmarc.Report(doc)
 <br>
 
 ##### Insert report #####
-Pass a session instance from sqlalchemy.
+Use a [Session](https://docs.sqlalchemy.org/en/13/orm/session_basics.html) instance from sqlalchemy.
 ```python
 report.insert(session)
 ```
