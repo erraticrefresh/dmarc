@@ -9,11 +9,13 @@ class TestGz(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.session = Session()
-        cls.parser = dmarc.Parser()
         cls.file = f'{sample_dir}/{filename}'
 
         with open(cls.file, 'rb') as f:
             cls.file_bytes = f.read()
+
+    def setUp(self):
+        self.parser = dmarc.Parser()
 
     def test_default_tolerance(self):
         self.assertEqual(self.parser.tolerance, 'minimal')

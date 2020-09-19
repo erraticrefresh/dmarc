@@ -12,16 +12,18 @@ class TestXml(TestCase):
     @classmethod
     def setUpClass(cls):
         cls.session = Session()
-        cls.parser = dmarc.Parser()
         cls.file = f'{sample_dir}/{filename}'[:-3]
 
         #unzip xml file from gzip archive
         with gzip_open(f'{sample_dir}/{filename}', 'rb') as gz:
-            with open(f'{sample_dir}/{filename}'[:-3], 'wb') as xml:
+            with open(cls.file, 'wb') as xml:
                 copyfileobj(gz, xml)
 
         with open(cls.file, 'rb') as f:
             cls.file_bytes = f.read()
+
+    def setUp(self):
+        self.parser = dmarc.Parser()
 
     def test_default_tolerance(self):
         self.assertEqual(self.parser.tolerance, 'minimal')
